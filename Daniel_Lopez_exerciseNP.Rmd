@@ -1,0 +1,199 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+# IE - Master in Business Analytics and Big Data
+Recommendation Systems
+
+Building a Non Personalized Recommendation Engine
+
+Author: Daniel Lopez
+
+========================================================
+
+# Initialization
+
+Import libraries
+
+```{r}
+# Used for movie ratings visualization
+library(Amelia)
+# Exercises 1 to 5 should not need new libraries
+# See functions: 
+# - sort
+# - apply
+# - colMeans
+# - subset
+# Used for Movielens analysis
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(gridExtra)
+```
+
+Load the critics dataset from Movielens
+
+```{r}
+# Read the dataset
+critics = read.csv("C:/Users/daniel/Desktop/Recommendation Engines/critics.csv")
+# Great visualization, user - rated movies matrix
+movie_ratings=critics[2:length(critics)]
+missmap(movie_ratings, main = "Missing values vs observed") 
+
+```
+
+# 1) Top 5 Movies, by rating mean
+Calculate mean rating for each movie, ordered with the highest rating listed first, and plot the top 5.
+
+**Expected result**:
+3.600000, 'The Shawshank Redemption'
+3.266667, 'Star Wars IV - A New Hope'
+3.222222, 'Blade Runner'
+3.166667, 'Groundhog Day'
+3.062500, 'The Silence of the Lambs'
+
+```{r fig.width=7, fig.height=6}
+
+#Calculate the means rating for the movies ommit nulls
+
+mean_rating <- colMeans(movie_ratings,na.rm = TRUE)
+
+# Sort the ratings from high to low
+
+mean_rating <- sort(mean_rating, decreasing = TRUE)
+
+# CHeck
+
+mean_rating[1:5]
+
+# Plot
+
+barplot(mean_rating[1:5], ylim = c(0,5),xlim=(colnames(mean_rating)),las=2,
+        col=c("coral3","coral4","cornflowerblue","cornsilk4","chartreuse4"))
+
+```
+# 2) Top 5 Movies, by rating distribution
+Calculate the percentage of ratings for each movie that are 4 stars or higher. Order with the highest percentage first, and plot the top 5 movies with more high ratings distribution.
+
+**Expected result**:
+0.7000000, 'The Shawshank Redemption'
+0.5333333, 'Star Wars IV - A New Hope'
+0.5000000, 'Gladiator'
+0.4444444, 'Blade Runner'
+0.4375000, 'The Silence of the Lambs'
+```
+```{r fig.width=7, fig.height=6}
+
+# We have to calculate the average for the movies with ratings >= therefore we subset those movies
+
+movie_average  <- colMeans(movie_ratings >= 4,na.rm = TRUE) 
+
+# We order them
+
+movie_average <- sort(movie_average, decreasing =TRUE) 
+
+# Check
+
+movie_average [1:5]
+
+# Plot
+
+barplot(movie_average[1:5],ylim = c(0,1),xlim=(colnames(movie_average)),las=2,
+        col=c("100","115","144","461","450"))
+        
+```
+# 3) Top 5 Movies, by quantity of ratings
+Count the number of ratings for each movie, order the one with most number of ratings first, submit the top 5.
+
+**Expected result**:
+17, 'Toy Story'
+16, 'The Silence of the Lambs'
+15, 'Star Wars IV - A New Hope'
+14, 'Star Wars VI - Return of the Jedi'
+13, 'Independence Day'
+
+```{r fig.width=7, fig.height=6}
+
+# We have to subset those movies who's rating is not null and count their nº of ratings
+
+movie_count <- colSums(!is.na(movie_ratings))
+
+# Order the movies 
+
+movie_count <- sort(movie_count,decreasing=TRUE)
+
+# Submit result
+
+movie_count[1:5]
+
+```
+
+# 4) People who watched Star Wars IV also watched ...
+Calculate movies that most often occur with other movie. For each movie, calculate the percentage of the other movie raters who also rated that movie. Order with the highest percentage first, and submit the top 5. Select "Star.Wars.IV...A.New.Hope" movie by defaut. Use the (x+y)/x method.
+
+Top Occurences:
+0.9333333, 'Toy Story'
+0.8666667, 'Star Wars: Episode VI - Return of the Jedi'
+0.8000000, 'The Silence of the Lambs'
+0.7333333, 'Independence Day'
+0.6666667, 'Total Recall'
+
+```{r fig.width=7, fig.height=6}
+
+# Create a subset with those movies that have rated and also rated starwars
+
+df_starwars <- subset(movie_ratings,!is.na(movie_ratings$"Star.Wars.IV...A.New.Hope"))
+
+# Count the number of ratings that are not null
+
+movie_count_star <- colSums(!is.na(df_starwars))
+
+# We devide all the movies by the ratings of starwars 
+
+movie_count_star <- movie_count_star[2:20]/movie_count_star[1]
+
+# We order them
+
+movie_count_star_order <- sort(movie_count_star,decreasing=TRUE)
+
+# Show result
+
+movie_count_star_order [1:5]
+```
+
+
+# 5) People who liked Babe also liked ...
+Calculate the movies better rated of people who liked a movie. Select the people who liked the movie "Babe" (4 or 5 stars) and provide the top 5 movies they liked most.
+
+**Expected result**:
+5.000, 'Pulp.Fiction'
+5.000, 'Groundhog.Day'
+4.500, 'The.Shawshank.Redemption'
+4.333, 'Toy.Story'
+4.000, 'Blade.Runner'
+
+```{r fig.width=7, fig.height=6}
+
+# We subset those movies with rating >= 4 and who liked Babe
+
+df_babe <- movie_ratings[which(movie_ratings$"Babe" >= 4),]
+
+# We need to take Babe from the original dataset
+
+df_babe <- subset(movie_ratings,select=-c(Babe))
+
+# Mean rating of the movies who also watched babe
+
+babe_fans_like  <- colMeans(df_babe,na.rm = TRUE) 
+
+# Order
+
+babe_fans_like <- sort(babe_fans_like,decreasing=TRUE)
+
+# Show
+
+babe_fans_like [1:5]
+```
+
+```
