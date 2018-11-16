@@ -36,7 +36,7 @@ Load the critics dataset from Movielens
 
 ```{r}
 # Read the dataset
-critics = read.csv("C:/Users/daniel/Desktop/Recommendation Engines/critics.csv")
+critics = read.csv("path/critics.csv")
 # Great visualization, user - rated movies matrix
 movie_ratings=critics[2:length(critics)]
 missmap(movie_ratings, main = "Missing values vs observed") 
@@ -115,7 +115,7 @@ Count the number of ratings for each movie, order the one with most number of ra
 
 ```{r fig.width=7, fig.height=6}
 
-# We have to subset those movies who's rating is not null and count their nº of ratings
+# We have to subset those movies who's rating is not null and count their nÂº of ratings
 
 movie_count <- colSums(!is.na(movie_ratings))
 
