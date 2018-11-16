@@ -36,7 +36,7 @@ Load the critics dataset.
 
 ```{r}
 
-critics = read.csv("C:/Users/Daniel/Desktop/Recommendation Engines/Lab 1 Deliverable/critics.csv")
+critics = read.csv("path/critics.csv")
 
 
 ```
