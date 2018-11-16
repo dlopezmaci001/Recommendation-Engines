@@ -1,0 +1,198 @@
+# IE - Master in Business Analytics and Big Data
+Recommendation Systems
+
+Building a Collaborative Filtering Engine
+
+Author: Daniel Lopez
+
+========================================================
+
+# Initialization
+
+Import libraries
+
+```{r}
+# Used for movie ratings visualization
+library(Amelia)
+# Exercises 1 to 5 should not need new libraries
+# See functions: 
+# - sort
+# - apply
+# - colMeans
+# - subset
+# Used for Movielens analysis
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(gridExtra)
+library(corrplot)
+library(magrittr)
+library(tidyverse)
+
+
+```
+
+Load the critics dataset.
+
+```{r}
+
+critics = read.csv("C:/Users/Daniel/Desktop/Recommendation Engines/Lab 1 Deliverable/critics.csv")
+
+
+```
+
+# 1) Pearson correlation coefficient 
+Calculate the Pearson correlation coefficient between Victoria and Nuria
+
+**Expected correlation between Victoria and Nuria**: 0.3651484
+
+```{r fig.width=7, fig.height=6}
+
+vic <- critics[15,2:21]
+
+nur <- critics[12,2:21]
+
+cor.test(t(nur),t(vic))
+
+```
+
+# 2) Compare two movie critics
+Using the calculated Pearson correlation in the previous section. Compare and show the movie ratings for Victoria and Nuria on a scatter plot. How is this compared with the same ratings of Maria and Nerea on a scatter plot? What about Chris and Jim? What it means?
+
+```{r fig.width=7, fig.height=6}
+
+# Plot test for Nuria and Victoria
+
+
+
+plot(t(nur),t(vic),xlab= "Rating's for Nuria",ylab = "Rating's for Victoria",
+     main="Rating comparison between Users",col= (c("red","green")),pch= 16)
+
+# Plot for Maria and Nerea
+
+plot(t(critics[2,2:21]),t(critics[13,2:21]),xlab= "Rating's for Maria",ylab = "Rating's for Nerea",
+     main="Rating comparison between Users",col= (c("orange","purple")),pch= 16)
+
+
+# Plot for Chris and Jim
+
+plot(t(critics[10,2:21]),t(critics[9,2:21]),xlab= "Rating's for Chris",ylab = "Rating's for Jim",
+     main="Rating comparison between Users",col= (c("blue","black")),pch= 16)
+
+
+
+```
+
+# 3) Top Recommendations 
+Get the top 5 movies recommended for Victoria. by using a weighted average of every other critic's rankings.
+
+**Expected result**:
+3.7917013044215, 'The Matrix'
+3.50776533175371, 'Forrest Gump'     
+3.33118834864677, 'The Sixth Sense' 
+3.11491825315719, 'Shakespeare in Love'
+2.9124513228665, 'Blade Runner'
+
+```{r fig.width=7, fig.height=6}
+
+# First we need to group the data
+
+grouped_critics <- gather(critics,"film","rating",-User)
+
+grouped_critics$rating <- as.numeric(grouped_critics$rating)
+
+# Now we need to assign the average rating per user and movie 
+
+grouped_critics <- grouped_critics %>%
+  group_by(User) %>%
+  mutate(avg_rating = mean(rating, na.rm = TRUE)) %>%
+  ungroup()
+
+# We get the ratings that Victoria gave
+
+Victoria_ratings <- grouped_critics %>%
+  filter(User == "Victoria") %>%
+  extract2("rating")
+
+# We include the correlation
+
+grouped_critics <- grouped_critics %>%
+  group_by(User) %>%
+  mutate(correlation = cor(rating, Victoria_ratings,use="complete.obs")) %>%
+  ungroup()
+
+# We get the info just for Vic
+
+victoria_movies <- subset(grouped_critics, User == "Victoria")
+
+victoria_movies <-victoria_movies[is.na(victoria_movies$rating),]
+
+films_not_seen <- victoria_movies[1:7,2]
+
+# Possible recommendations for Victoria
+# Films not seen with raitings
+df <- grouped_critics[grouped_critics$film %in% films_not_seen$film,]
+
+# We calculate the recomm_score for the total movies
+
+df <- df %>%
+  group_by(film) %>%
+  summarise(recomm_score = sum((rating - avg_rating) * correlation, na.rm = TRUE) / (sum(abs(correlation)) - 1)) %>%
+    mutate(recomm_score = recomm_score + mean(Victoria_ratings, na.rm = TRUE))
+
+# Now we order from high to low
+
+df <- df %>% arrange(desc(recomm_score))
+
+head(df,5)
+
+```
+
+# 4) Top similar critics
+Return the top 5 critics that are most similar to Victoria. 
+
+**Expected result**:
+0.9449112, 'Rachel'
+0.5976143, 'Ana' 
+0.5789794, 'Oriol'
+0.4925922, 'Maria'
+0.4273247, 'Carles'
+
+```{r fig.width=7, fig.height=6}
+
+# We get the movies watched by victoria
+
+victoria_movies_s <- subset(grouped_critics, User == "Victoria")
+
+victoria_movies_s <-victoria_movies_s[!is.na(victoria_movies_s$rating),]
+
+films_seen <- victoria_movies_s[1:13,2]
+
+# Dataframe with those that watched the same movies as Victoria
+
+df_user <- grouped_critics[grouped_critics$film %in% films_seen$film,]
+
+# We take Victoria out of the set
+
+df_user <- df_user %>% filter( User != "Victoria")
+
+# I only want those users who have seen the same movies as VIc
+
+df_user <- df_user[!is.na(df_user$rating),]
+
+# We only need the name and cor columns
+
+df_user <- df_user[,c(1,5)]
+
+# We remove the duplicate names
+
+df_user <- unique(df_user[,])
+
+# Now we order from high to low
+
+df_user <- df_user %>% 
+            arrange(desc(correlation))
+
+head(df_user,5)
+
+```
